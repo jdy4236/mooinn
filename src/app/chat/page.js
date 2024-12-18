@@ -1,16 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import io from "socket.io-client";
 
-// 서버 주소와 WebSocket 경로를 명확히 설정
-const socket = io("http://localhost:3000");
+let socket;
 
 export default function ChatPage() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
+  const searchParams = useSearchParams();
+  const roomId = searchParams.get("roomId"); // URL 쿼리 파라미터로 방 ID 가져오기
 
   useEffect(() => {
+    if (!roomId) {
+      return; // 방 ID가 없으면 아무 작업도 하지 않음
+    }
+
+    // WebSocket 연결 및 방 참가
+    socket = io("http://localhost:3000");
+    socket.emit("joinRoom", roomId);
+
     // 메시지 수신 처리
     socket.on("message", (newMessage) => {
       setMessages((prevMessages) => [...prevMessages, newMessage]);
@@ -19,18 +29,18 @@ export default function ChatPage() {
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [roomId]);
 
   const sendMessage = () => {
     if (message.trim()) {
-      socket.emit("message", message);
+      socket.emit("message", { roomId, message });
       setMessage("");
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <h1 className="text-2xl font-bold">Chat Room</h1>
+      <h1 className="text-2xl font-bold mb-4">Chat Room: {roomId}</h1>
       <div className="mt-4 w-full max-w-md">
         <div className="p-4 border bg-white rounded shadow">
           <ul>

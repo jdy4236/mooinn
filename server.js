@@ -16,10 +16,16 @@ app.prepare().then(() => {
   io.on("connection", (socket) => {
     console.log("A user connected:", socket.id);
 
-    // 메시지 처리
-    socket.on("message", (message) => {
-      console.log("Received message:", message);
-      io.emit("message", message);
+    // 방 참가
+    socket.on("joinRoom", (roomId) => {
+      console.log(`${socket.id} joined room: ${roomId}`);
+      socket.join(roomId);
+    });
+
+    // 메시지 수신 및 특정 방에 메시지 전달
+    socket.on("message", ({ roomId, message }) => {
+      console.log(`Message in room ${roomId}: ${message}`);
+      io.to(roomId).emit("message", message); // 해당 방에만 메시지 전달
     });
 
     socket.on("disconnect", () => {
