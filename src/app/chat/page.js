@@ -7,59 +7,56 @@ import io from "socket.io-client";
 let socket;
 
 export default function ChatPage() {
+  const [roomId, setRoomId] = useState(null);
+  const [nickname, setNickname] = useState(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [users, setUsers] = useState([]);
   const router = useRouter();
-  const searchParams = new URLSearchParams(window.location.search);
-  const roomId = searchParams.get("roomId");
-  const nickname = searchParams.get("nickname");
 
   useEffect(() => {
-    if (!roomId || !nickname) {
-      router.push("/");
+    // URL에서 roomId와 nickname 가져오기
+    const searchParams = new URLSearchParams(window.location.search);
+    const room = searchParams.get("roomId");
+    const name = searchParams.get("nickname");
+
+    if (!room || !name) {
+      router.push("/"); // 유효하지 않으면 홈으로 리다이렉트
       return;
     }
+
+    setRoomId(room);
+    setNickname(name);
 
     socket = io("http://localhost:3000");
 
     // 방 참가
-    socket.emit("joinRoom", { roomId, nickname });
+    socket.emit("joinRoom", { roomId: room, nickname: name });
 
     // 메시지 수신 처리
     socket.on("message", ({ nickname, message }) => {
       setMessages((prevMessages) => [...prevMessages, { nickname, message }]);
     });
 
-    // 사용자 목록 업데이트
-    socket.on("roomUsers", (users) => {
-      setUsers(users);
-    });
-
     return () => {
       socket.disconnect();
     };
-  }, [roomId, nickname, router]);
+  }, [router]);
 
   const sendMessage = () => {
-    if (message.trim()) {
+    if (message.trim() && roomId && nickname) {
       socket.emit("message", { roomId, message, nickname });
       setMessage("");
     }
   };
 
+  if (!roomId || !nickname) {
+    return null; // roomId와 nickname이 없으면 아무것도 렌더링하지 않음
+  }
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <h1 className="text-2xl font-bold mb-4">Chat Room: {roomId}</h1>
       <p className="mb-4">Nickname: {nickname}</p>
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold">Users in Room:</h2>
-        <ul>
-          {users.map((user) => (
-            <li key={user.id}>{user.nickname}</li>
-          ))}
-        </ul>
-      </div>
       <div className="mt-4 w-full max-w-md">
         <div className="p-4 border bg-white rounded shadow">
           <ul>

@@ -1,60 +1,77 @@
 const { createServer } = require("http");
 const next = require("next");
+const express = require("express");
 const { Server } = require("socket.io");
 
 const dev = process.env.NODE_ENV !== "production";
-const app = next({ dev });
-const handle = app.getRequestHandler();
+const nextApp = next({ dev });
+const nextHandler = nextApp.getRequestHandler();
 
-app.prepare().then(() => {
-  const server = createServer((req, res) => {
-    handle(req, res);
-  });
-
+nextApp.prepare().then(() => {
+  const app = express(); // Express 초기화
+  const server = createServer(app); // Express 서버를 HTTP 서버로 변환
   const io = new Server(server);
 
-  // 각 방의 사용자 정보 저장
+  // WebSocket 서버 설정
   const rooms = {};
-
-  io.on("connection", (socket) => {
-    console.log("A user connected:", socket.id);
-
-    // 방 참가
-    socket.on("joinRoom", ({ roomId, nickname }) => {
-      console.log(`${nickname} joined room: ${roomId}`);
+io.on("connection", (socket) => {
+  socket.on("joinRoom", ({ roomId, nickname }) => {
+    try {
+      // 유효성 검사
+      if (!roomId || !nickname) {
+        socket.emit("error", { message: "Invalid room ID or nickname." });
+        return;
+      }
 
       // 방 정보 초기화
       if (!rooms[roomId]) {
         rooms[roomId] = [];
       }
 
-      // 닉네임과 소켓 ID 저장
-      rooms[roomId].push({ id: socket.id, nickname });
+      // 중복 닉네임 검사
+      const isDuplicate = rooms[roomId].some((user) => user.nickname === nickname);
+      if (isDuplicate) {
+        socket.emit("duplicateNickname", { message: "Nickname already exists in this room." });
+        return;
+      }
 
+      // 닉네임 추가 및 방 입장
+      rooms[roomId].push({ id: socket.id, nickname });
       socket.join(roomId);
 
-      // 현재 방의 사용자 목록 업데이트
+      // 사용자 목록 업데이트
       io.to(roomId).emit("roomUsers", rooms[roomId]);
-    });
+    } catch (error) {
+      console.error("Error in joinRoom:", error);
+      socket.emit("error", { message: "An unexpected error occurred." });
+    }
+  });
 
-    // 메시지 수신 및 방에 전달
-    socket.on("message", ({ roomId, message, nickname }) => {
-      console.log(`Message in room ${roomId} from ${nickname}: ${message}`);
-      io.to(roomId).emit("message", { nickname, message });
-    });
-
-    // 연결 종료 처리
-    socket.on("disconnect", () => {
-      console.log("A user disconnected:", socket.id);
-
-      // 모든 방에서 해당 사용자 제거
-      for (const roomId in rooms) {
-        rooms[roomId] = rooms[roomId].filter((user) => user.id !== socket.id);
-
-        // 업데이트된 사용자 목록 전달
-        io.to(roomId).emit("roomUsers", rooms[roomId]);
+  socket.on("disconnect", () => {
+    for (const roomId in rooms) {
+      rooms[roomId] = rooms[roomId].filter((user) => user.id !== socket.id);
+      io.to(roomId).emit("roomUsers", rooms[roomId]);
+      if (rooms[roomId].length === 0) {
+        delete rooms[roomId];
       }
-    });
+    }
+  });
+});
+
+
+
+  // 관리자용 REST API 엔드포인트 추가
+  app.get("/admin/rooms", (req, res) => {
+    const roomDetails = Object.keys(rooms).map((roomId) => ({
+      roomId,
+      users: rooms[roomId],
+    }));
+    res.json(roomDetails); // 활성화된 방 정보를 JSON으로 반환
+  });
+
+  // Next.js 요청 핸들링
+  app.all("*", (req, res) => {
+    return nextHandler(req, res); // Next.js로 요청 전달
   });
 
   const port = process.env.PORT || 3000;
