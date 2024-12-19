@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import io from "socket.io-client";
 
 let socket;
@@ -9,31 +9,41 @@ let socket;
 export default function ChatPage() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const searchParams = useSearchParams();
-  const roomId = searchParams.get("roomId"); // URL 쿼리 파라미터로 방 ID 가져오기
+  const [users, setUsers] = useState([]);
+  const router = useRouter();
+  const searchParams = new URLSearchParams(window.location.search);
+  const roomId = searchParams.get("roomId");
+  const nickname = searchParams.get("nickname");
 
   useEffect(() => {
-    if (!roomId) {
-      return; // 방 ID가 없으면 아무 작업도 하지 않음
+    if (!roomId || !nickname) {
+      router.push("/");
+      return;
     }
 
-    // WebSocket 연결 및 방 참가
     socket = io("http://localhost:3000");
-    socket.emit("joinRoom", roomId);
+
+    // 방 참가
+    socket.emit("joinRoom", { roomId, nickname });
 
     // 메시지 수신 처리
-    socket.on("message", (newMessage) => {
-      setMessages((prevMessages) => [...prevMessages, newMessage]);
+    socket.on("message", ({ nickname, message }) => {
+      setMessages((prevMessages) => [...prevMessages, { nickname, message }]);
+    });
+
+    // 사용자 목록 업데이트
+    socket.on("roomUsers", (users) => {
+      setUsers(users);
     });
 
     return () => {
       socket.disconnect();
     };
-  }, [roomId]);
+  }, [roomId, nickname, router]);
 
   const sendMessage = () => {
     if (message.trim()) {
-      socket.emit("message", { roomId, message });
+      socket.emit("message", { roomId, message, nickname });
       setMessage("");
     }
   };
@@ -41,12 +51,21 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <h1 className="text-2xl font-bold mb-4">Chat Room: {roomId}</h1>
+      <p className="mb-4">Nickname: {nickname}</p>
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold">Users in Room:</h2>
+        <ul>
+          {users.map((user) => (
+            <li key={user.id}>{user.nickname}</li>
+          ))}
+        </ul>
+      </div>
       <div className="mt-4 w-full max-w-md">
         <div className="p-4 border bg-white rounded shadow">
           <ul>
             {messages.map((msg, index) => (
               <li key={index} className="mb-2">
-                {msg}
+                <strong>{msg.nickname}:</strong> {msg.message}
               </li>
             ))}
           </ul>

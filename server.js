@@ -13,23 +13,47 @@ app.prepare().then(() => {
 
   const io = new Server(server);
 
+  // 각 방의 사용자 정보 저장
+  const rooms = {};
+
   io.on("connection", (socket) => {
     console.log("A user connected:", socket.id);
 
     // 방 참가
-    socket.on("joinRoom", (roomId) => {
-      console.log(`${socket.id} joined room: ${roomId}`);
+    socket.on("joinRoom", ({ roomId, nickname }) => {
+      console.log(`${nickname} joined room: ${roomId}`);
+
+      // 방 정보 초기화
+      if (!rooms[roomId]) {
+        rooms[roomId] = [];
+      }
+
+      // 닉네임과 소켓 ID 저장
+      rooms[roomId].push({ id: socket.id, nickname });
+
       socket.join(roomId);
+
+      // 현재 방의 사용자 목록 업데이트
+      io.to(roomId).emit("roomUsers", rooms[roomId]);
     });
 
-    // 메시지 수신 및 특정 방에 메시지 전달
-    socket.on("message", ({ roomId, message }) => {
-      console.log(`Message in room ${roomId}: ${message}`);
-      io.to(roomId).emit("message", message); // 해당 방에만 메시지 전달
+    // 메시지 수신 및 방에 전달
+    socket.on("message", ({ roomId, message, nickname }) => {
+      console.log(`Message in room ${roomId} from ${nickname}: ${message}`);
+      io.to(roomId).emit("message", { nickname, message });
     });
 
+    // 연결 종료 처리
     socket.on("disconnect", () => {
       console.log("A user disconnected:", socket.id);
+
+      // 모든 방에서 해당 사용자 제거
+      for (const roomId in rooms) {
+        rooms[roomId] = rooms[roomId].filter((user) => user.id !== socket.id);
+
+        // 업데이트된 사용자 목록 전달
+        io.to(roomId).emit("roomUsers", rooms[roomId]);
+      }
     });
   });
 
