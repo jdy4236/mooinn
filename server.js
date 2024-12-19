@@ -8,74 +8,85 @@ const nextApp = next({ dev });
 const nextHandler = nextApp.getRequestHandler();
 
 nextApp.prepare().then(() => {
-  const app = express(); // Express 초기화
-  const server = createServer(app); // Express 서버를 HTTP 서버로 변환
+  const app = express();
+  const server = createServer(app);
   const io = new Server(server);
 
-  // WebSocket 서버 설정
+  // 방 정보를 메모리에 저장
   const rooms = {};
-io.on("connection", (socket) => {
-  socket.on("joinRoom", ({ roomId, nickname }) => {
-    try {
-      // 유효성 검사
-      if (!roomId || !nickname) {
-        socket.emit("error", { message: "Invalid room ID or nickname." });
-        return;
-      }
 
-      // 방 정보 초기화
+  io.on("connection", (socket) => {
+    console.log("A user connected:", socket.id);
+
+    // 방 참가
+    socket.on("joinRoom", ({ roomId, nickname }) => {
+      console.log(`${nickname} joined room: ${roomId}`);
+
       if (!rooms[roomId]) {
         rooms[roomId] = [];
       }
 
-      // 중복 닉네임 검사
+      // 닉네임 중복 체크
       const isDuplicate = rooms[roomId].some((user) => user.nickname === nickname);
       if (isDuplicate) {
-        socket.emit("duplicateNickname", { message: "Nickname already exists in this room." });
+        socket.emit("nicknameError", { message: "Nickname already exists in this room." });
         return;
       }
 
-      // 닉네임 추가 및 방 입장
+      // 유저 추가
       rooms[roomId].push({ id: socket.id, nickname });
       socket.join(roomId);
 
-      // 사용자 목록 업데이트
+      // 방 사용자 목록 업데이트
       io.to(roomId).emit("roomUsers", rooms[roomId]);
-    } catch (error) {
-      console.error("Error in joinRoom:", error);
-      socket.emit("error", { message: "An unexpected error occurred." });
-    }
-  });
 
-  socket.on("disconnect", () => {
-    for (const roomId in rooms) {
-      rooms[roomId] = rooms[roomId].filter((user) => user.id !== socket.id);
-      io.to(roomId).emit("roomUsers", rooms[roomId]);
-      if (rooms[roomId].length === 0) {
-        delete rooms[roomId];
+      // 관리자에게 방 정보 업데이트
+      io.emit("adminRooms", getRoomDetails());
+    });
+
+    // 메시지 처리
+    socket.on("message", ({ roomId, message, nickname, timestamp }) => {
+      io.to(roomId).emit("message", { nickname, message, timestamp });
+    });
+
+    // 연결 종료 처리
+    socket.on("disconnect", () => {
+      console.log("A user disconnected:", socket.id);
+
+      for (const roomId in rooms) {
+        rooms[roomId] = rooms[roomId].filter((user) => user.id !== socket.id);
+
+        if (rooms[roomId].length === 0) {
+          delete rooms[roomId];
+        } else {
+          io.to(roomId).emit("roomUsers", rooms[roomId]);
+        }
       }
-    }
+
+      // 관리자에게 방 정보 업데이트
+      io.emit("adminRooms", getRoomDetails());
+    });
   });
-});
 
-
-
-  // 관리자용 REST API 엔드포인트 추가
+  // 관리자 페이지 방 목록 API
   app.get("/admin/rooms", (req, res) => {
-    const roomDetails = Object.keys(rooms).map((roomId) => ({
-      roomId,
-      users: rooms[roomId],
-    }));
-    res.json(roomDetails); // 활성화된 방 정보를 JSON으로 반환
+    res.json(getRoomDetails());
   });
 
-  // Next.js 요청 핸들링
   app.all("*", (req, res) => {
-    return nextHandler(req, res); // Next.js로 요청 전달
+    return nextHandler(req, res);
   });
 
   const port = process.env.PORT || 3000;
   server.listen(port, () => {
     console.log(`> Ready on http://localhost:${port}`);
   });
+
+  // 방 정보 가져오기
+  function getRoomDetails() {
+    return Object.keys(rooms).map((roomId) => ({
+      roomId,
+      users: rooms[roomId],
+    }));
+  }
 });
