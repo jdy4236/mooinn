@@ -1,0 +1,116 @@
+/* src/app/page.module.css */
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 75%;
+    /* 전체 크기를 75%로 설정 */
+    margin: 0 auto;
+    /* 중앙 정렬 */
+    min-height: 100vh;
+    padding: 20px;
+    background-color: white;
+    /* 배경색 흰색 */
+    color: black;
+    /* 텍스트 색상 검정색 */
+}
+
+.title {
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+.input {
+    width: 100%;
+    max-width: 300px;
+    /* 입력 필드의 최대 너비 설정 */
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    /* 배경색 흰색 */
+    color: #000;
+    /* 텍스트 색상 검정색 */
+    font-size: 1rem;
+}
+
+.button {
+    width: 100%;
+    max-width: 300px;
+    /* 버튼의 최대 너비 설정 */
+    padding: 10px;
+    margin-bottom: 15px;
+    border: none;
+    border-radius: 4px;
+    background-color: #000;
+    /* 배경색 검정색 */
+    color: #fff;
+    /* 텍스트 색상 흰색 */
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+    /* 호버 효과 부드럽게 */
+}
+
+.button:hover {
+    background-color: #333;
+    /* 호버 시 진한 회색 */
+}
+
+.roomContainer {
+    display: flex;
+    width: 100%;
+    max-width: 300px;
+    /* 컨테이너 최대 너비 설정 */
+}
+
+.roomInput {
+    width: 100%;
+    /* .input과 동일하게 설정 */
+    max-width: 300px;
+    /* .input과 동일하게 설정 */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    /* 배경색 흰색 */
+    color: #000;
+    /* 텍스트 색상 검정색 */
+    font-size: 1rem;
+    margin-right: 10px;
+    /* 오른쪽 여백 추가 */
+}
+
+.loading {
+    /* 로딩 스피너 스타일 */
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #000;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 400px) {
+    .roomContainer {
+        flex-direction: column;
+    }
+
+    .roomInput {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+}
