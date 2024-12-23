@@ -1,8 +1,11 @@
+// src/app/chat/page.js
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import io from "socket.io-client";
+import styles from './chat.module.css'; // CSS 모듈 임포트
 
 let socket;
 
@@ -29,7 +32,10 @@ export default function ChatPage() {
     setRoomId(room);
     setNickname(name);
 
-    socket = io("http://localhost:3000");
+    // Socket.io 서버 초기화 (환경에 따라 URL 변경 필요)
+    socket = io("http://localhost:3000", {
+      path: "/socket.io", // 서버에서 설정한 경로와 일치해야 함
+    });
 
     // 방 참가
     socket.emit("joinRoom", { roomId: room, nickname: name });
@@ -69,7 +75,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className={`flex flex-col h-screen ${styles.container}`}>
       <header className="bg-blue-600 text-white py-4 px-6 flex justify-between">
         <div>
           <h1 className="text-lg font-bold">Chat Room: {roomId}</h1>
@@ -83,31 +89,38 @@ export default function ChatPage() {
         </button>
       </header>
       <main className="flex-grow overflow-y-auto bg-gray-50 p-4">
-        <ul>
-          {messages.map((msg, index) => (
-            <li key={index} className="mb-2">
-              <strong>{msg.nickname}</strong>{" "}
-              <span className="text-gray-500">({msg.timestamp})</span>:{" "}
-              {msg.message}
-            </li>
-          ))}
-        </ul>
-        <div ref={messagesEndRef} />
+        <div className={styles.chatBox}>
+          <ul>
+            {messages.map((msg, index) => (
+              <li key={index} className={styles.message}>
+                <strong className={styles.nickname}>{msg.nickname}</strong>{" "}
+                <span className={styles.timestamp}>({msg.timestamp})</span>:{" "}
+                {msg.message}
+              </li>
+            ))}
+          </ul>
+          <div ref={messagesEndRef} />
+        </div>
       </main>
       <footer className="bg-white p-4 flex">
-        <input
-          type="text"
-          className="flex-grow p-2 border rounded-l"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type a message..."
-        />
-        <button
-          className="p-2 bg-blue-500 text-white rounded-r"
-          onClick={sendMessage}
-        >
-          Send
-        </button>
+        <div className={styles.inputContainer}>
+          <input
+            type="text"
+            className={`${styles.input} text-black`}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Type a message..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter") sendMessage();
+            }}
+          />
+          <button
+            className={styles.button}
+            onClick={sendMessage}
+          >
+            Send
+          </button>
+        </div>
       </footer>
     </div>
   );
