@@ -10,9 +10,34 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  nickname  String   @unique
-  email     String   @unique
+  id        Int       @id @default(autoincrement())
+  nickname  String    @unique
+  email     String    @unique
   password  String
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+
+  // Messages 관계 추가
+  messages  Message[] // User가 보낸 메시지
+}
+
+model Room {
+  id        String    @id
+  type      String
+  createdBy Int
+  createdAt DateTime  @default(now())
+
+  // Messages 관계 추가
+  messages  Message[] // Room에 포함된 메시지
+}
+
+model Message {
+  id        Int       @id @default(autoincrement())
+  roomId    String
+  senderId  Int
+  content   String
+  createdAt DateTime  @default(now())
+
+  // Room 및 User와의 관계
+  Room      Room      @relation(fields: [roomId], references: [id])
+  User      User      @relation(fields: [senderId], references: [id])
 }

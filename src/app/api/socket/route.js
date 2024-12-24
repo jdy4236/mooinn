@@ -1,5 +1,3 @@
-// src/app/api/socket/route.js
-
 import { Server } from "socket.io";
 
 export const config = {
@@ -8,11 +6,13 @@ export const config = {
     },
 };
 
+let io;
+
 const ioHandler = (req, res) => {
     if (!res.socket.server.io) {
         console.log("Initializing Socket.io");
 
-        const io = new Server(res.socket.server, {
+        io = new Server(res.socket.server, {
             path: "/socket.io", // 클라이언트와 일치하도록 경로 설정
             addTrailingSlash: false,
             cors: {
@@ -28,13 +28,12 @@ const ioHandler = (req, res) => {
             socket.on("joinRoom", ({ roomId, nickname }) => {
                 socket.join(roomId);
                 socket.nickname = nickname;
-                console.log(`${nickname} joined room ${roomId}`);
 
                 // 현재 방의 사용자 목록을 업데이트
                 const users = Array.from(io.sockets.adapter.rooms.get(roomId) || []).map(
                     (id) => {
                         const s = io.sockets.sockets.get(id);
-                        return s.nickname;
+                        return s.nickname || "Anonymous";
                     }
                 );
                 io.to(roomId).emit("roomUsers", users);
@@ -48,7 +47,6 @@ const ioHandler = (req, res) => {
 
             socket.on("disconnect", () => {
                 console.log("User disconnected:", socket.id);
-                // 필요 시 사용자 목록 업데이트 로직 추가
             });
         });
 
