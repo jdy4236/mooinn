@@ -7,10 +7,8 @@
     /* 중앙 정렬 */
     padding: 20px;
     /* 내부 여백 유지 */
-    background-color: white;
-    /* 배경색 흰색 */
-    color: black;
-    /* 텍스트 색상 검정색 */
+    /* background-color: white; 제거 */
+    /* color: black; 제거 */
 }
 
 .title {
@@ -81,24 +79,20 @@
     /* 호버 시 진한 회색 */
 }
 
-.loading {
-    /* 로딩 스피너 스타일 */
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #000;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    animation: spin 2s linear infinite;
+.userList {
+    width: 200px;
+    border-left: 1px solid #ccc;
+    padding-left: 20px;
+    background-color: #f1f1f1;
 }
 
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
+.userListTitle {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+}
 
-    100% {
-        transform: rotate(360deg);
-    }
+.userItem {
+    margin-bottom: 8px;
 }
 
 @media (max-width: 600px) {
@@ -125,5 +119,13 @@
         margin-left: 0;
         margin-top: 10px;
         width: 100%;
+    }
+
+    .userList {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #ccc;
+        padding-left: 0;
+        padding-top: 20px;
     }
 }

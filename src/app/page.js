@@ -69,7 +69,7 @@ export default function Home() {
   if (isLoading) {
     return (
       <div className={styles.container}>
-        <h1 className={styles.title}>MOOINN Chat</h1>
+        <h1 className={styles.title}>Chat</h1>
         <div className={styles.loading}></div> {/* 로딩 스피너 */}
       </div>
     );
@@ -77,7 +77,7 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>MOOINN Chat</h1>
+      <h1 className={styles.title}>Chat</h1>
       <input
         type="text"
         placeholder="Enter your nickname"

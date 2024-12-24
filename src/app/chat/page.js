@@ -47,7 +47,10 @@ export default function ChatPage() {
     });
 
     // 사용자 목록 업데이트
-    socket.on("roomUsers", (users) => setUsers(users));
+    socket.on("roomUsers", (users) => {
+      console.log("Received users:", users); // 디버깅용 로그
+      setUsers(users);
+    });
 
     // 메시지 수신 처리
     socket.on("message", ({ nickname, message, timestamp }) => {
@@ -88,8 +91,8 @@ export default function ChatPage() {
           Generate Invite
         </button>
       </header>
-      <main className="flex-grow overflow-y-auto bg-gray-50 p-4">
-        <div className={styles.chatBox}>
+      <div className="flex flex-grow">
+        <main className={`flex-grow overflow-y-auto p-4 ${styles.chatBox}`}>
           <ul>
             {messages.map((msg, index) => (
               <li key={index} className={styles.message}>
@@ -100,8 +103,18 @@ export default function ChatPage() {
             ))}
           </ul>
           <div ref={messagesEndRef} />
-        </div>
-      </main>
+        </main>
+        <aside className={styles.userList}>
+          <h2 className={styles.userListTitle}>Users</h2>
+          <ul>
+            {users.map((user, index) => (
+              <li key={index} className={styles.userItem}>
+                {user.nickname ? user.nickname : user}
+              </li>
+            ))}
+          </ul>
+        </aside>
+      </div>
       <footer className="bg-white p-4 flex">
         <div className={styles.inputContainer}>
           <input
